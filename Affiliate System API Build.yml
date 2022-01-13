@@ -41,7 +41,7 @@ stages:
       demands:
       - maven
   - deployment:
-    environment:
+    environment: 'dev'
     strategy:
      runOnce:
       deploy:
