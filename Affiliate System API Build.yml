@@ -1,0 +1,63 @@
+
+trigger:
+  - master
+stages:
+- stage: 'Build'
+  displayName: "Affiliate System API Build"
+  jobs:
+  - job:
+  pool:
+    vmImage: 'ubuntu-20.04'
+    steps:
+    - task: Maven@3
+      inputs:
+        mavenPomFile: 'pom.xml'
+        options: '$(Agent.TempDirectory)/settings.xml -Dmaven.test.failure.ignore=false'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        javaHomeOption: 'JDKVersion'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: false
+    - task: CopyFiles@2
+      inputs:
+        Contents: |
+          target/*.jar
+          pom.xml
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+- stage: 'Dev'
+  dependsOn: 'Build'
+  displayName: 'Dev Release'
+  jobs:
+  - job:
+    pool:
+      vmimage: 'vs2017-win2016'
+      demands:
+      - maven
+  - deployment:
+    strategy:
+     runOnce:
+      deploy:
+        steps:
+        - task: DownloadBuildArtifacts@1
+          inputs:
+            buildType: 'current'
+            downloadType: 'single'
+            artifactName: 'drop'
+            downloadPath: '$(Build.ArtifactStagingDirectory)'
+        - task: PowerShell@2
+          inputs:
+            targetType: 'inline'
+            script: |
+              [xml]$pomXml = Get-Content $(System.ArtifactsDirectory)/$(MULE_APP_NAME)/drop/pom.xml
+                                        # version
+                                        Write-Host $pomXml.project.version
+                                        $pomversion=$pomXml.project.version
+                                        Write-Host "##vso[task.setvariable variable=pomversion]$pomversion"
+
