@@ -9,10 +9,10 @@ stages:
   pool:
   vmImage: 'ubuntu-20.04'
   steps:
-    - task: DownloadSecureFile@1
-      displayName: "Download secure file"
-      inputs:
-        secureFile: 'settings.xml'
+   # - task: DownloadSecureFile@1
+    #  displayName: "Download secure file"
+     # inputs:
+      #  secureFile: 'settings.xml'
     - task: Maven@3
       displayName: "Test and Build"
       inputs:
@@ -59,10 +59,10 @@ stages:
               steps:
               - download: current
                 artifact: drop
-              - task: DownloadSecureFile@1
-                displayName: 'Download secure file'
-                inputs:
-                  secureFile: 'settings.xml'
+              #- task: DownloadSecureFile@1
+               # displayName: 'Download secure file'
+                #inputs:
+                 # secureFile: 'settings.xml'
               - task: PowerShell@2
                 displayName: "Extract Version"
                 inputs:
@@ -106,10 +106,10 @@ stages:
               steps:
               - download: current
                 artifact: drop
-              - task: DownloadSecureFile@1
-                displayName: 'Download secure file'
-                inputs:
-                  secureFile: 'settings.xml'
+           #   - task: DownloadSecureFile@1
+            #    displayName: 'Download secure file'
+             #   inputs:
+             #     secureFile: 'settings.xml'
               - task: PowerShell@2
                 displayName: "Extract Version"
                 inputs:
