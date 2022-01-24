@@ -61,4 +61,49 @@ stages:
                                         Write-Host $pomXml.project.version
                                         $pomversion=$pomXml.project.version
                                         Write-Host "##vso[task.setvariable variable=pomversion]$pomversion"
-
+- stage: 'ist'
+  dependsOn: 'DEV'
+  displayName: 'QA Release'
+  jobs:
+  - job:
+    pool:
+      vmimage: 'vs2017-win2016'
+      demands:
+      - maven 
+      variables:
+      - group: "Anypoint Platform 'QA Variables"
+      - group: "Azure DevOps Mule Deployer"
+  - deployment: 'Deploy'
+    environment: 'ist'
+    strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: current
+                artifact: drop
+              - task: DownloadSecureFile@1
+                displayName: 'Download secure file'
+                inputs:
+                  secureFile: 'settings.xml'
+              - task: PowerShell@2
+                displayName: "Extract Version"
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    [xml]$pomXml = Get-Content $(System.ArtifactsDirectory)/$(MULE_APP_NAME)/drop/pom.xml
+                          # version
+                          Write-Host $pomXml.project.version
+                          $pomversion=$pomXml.project.version
+                          Write-Host "##vso[task.setvariable variable=pomversion]$pomversion"
+              - task: Maven@3
+                inputs:
+                  mavenPomFile: '$(System.ArtifactsDirectory)/$(MULE_APP_NAME)/drop/pom.xml'
+                  goals: 'mule:deploy'
+                  options: '-DskipTests -DmuleDeploy -Danypoint.username=$(MuleDeployerUsername)  -Danypoint.password=$(MuleDeployerPassword)   -Danypoint.platform.client_id=$(ClientId)    -Danypoint.environment=$(Environment)   -Danypoint.platform.client_secret=$(ClientSecret)   -Dmule.env=$(Environment)  -Dmule.vault.key=$(Mule_Key)  -Dworker.count=$(WorkerCount)   -Dworker.type=$(WorkerType)   -Dworker.region=$(WorkerRegion)  -Dmule.artifact=$(System.ArtifactsDirectory)/$(Release.PrimaryArtifactSourceAlias)/drop/target/$(MULE_APP_NAME)-$(pomversion)-mule-application.jar'
+                  publishJUnitResults: true
+                  testResultsFiles: '**/surefire-reports/TEST-*.xml'
+                  javaHomeOption: 'JDKVersion'
+                  mavenVersionOption: 'Default'
+                  mavenAuthenticateFeed: false
+                  effectivePomSkip: false
+                  sonarQubeRunAnalysis: false
