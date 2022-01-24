@@ -99,7 +99,7 @@ stages:
       - group: "Anypoint Platform 'QA Variables"
       - group: "Azure DevOps Mule Deployer"
   - deployment: 'Deploy'
-    environment: 'QA'
+    environment: 'ist'
     strategy:
           runOnce:
             deploy:
