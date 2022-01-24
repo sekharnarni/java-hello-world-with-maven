@@ -20,6 +20,11 @@ stages:
         mavenAuthenticateFeed: false
         effectivePomSkip: false
         sonarQubeRunAnalysis: false
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
 
 - stage: 'Dev'
   dependsOn: 'Build'
@@ -42,46 +47,44 @@ stages:
             downloadType: 'single'
             artifactName: 'drop'
             downloadPath: '$(Build.ArtifactStagingDirectory)'
-        - task: PowerShell@2
+        - task: Maven@3
           inputs:
-            targetType: 'inline'
-            script: |
-              [xml]$pomXml = Get-Content $(System.ArtifactsDirectory)/$(MULE_APP_NAME)/drop/pom.xml
-                                        # version
-                                        Write-Host $pomXml.project.version
-                                        $pomversion=$pomXml.project.version
-                                        Write-Host "##vso[task.setvariable variable=pomversion]$pomversion"
+            mavenPomFile: 'pom.xml'
+            publishJUnitResults: true
+            testResultsFiles: '**/surefire-reports/TEST-*.xml'
+            javaHomeOption: 'JDKVersion'
+            mavenVersionOption: 'Default'
+            mavenAuthenticateFeed: false
+            effectivePomSkip: false
+            sonarQubeRunAnalysis: false
 - stage: 'ist'
   dependsOn: 'DEV'
-  displayName: 'QA Release'
+  displayName: 'IST Release'
   jobs:
   - job:
     pool:
       vmimage: 'vs2017-win2016'
       demands:
-      - maven 
-      variables:
-      - group: "Anypoint Platform 'QA Variables"
-      - group: "Azure DevOps Mule Deployer"
-  - deployment: 'Deploy'
+      - maven
+  - deployment:
     environment: 'ist'
     strategy:
-          runOnce:
-            deploy:
-              steps:
-              - download: current
-                artifact: drop
-              - task: DownloadSecureFile@1
-                displayName: 'Download secure file'
-                inputs:
-                  secureFile: 'settings.xml'
-              - task: PowerShell@2
-                displayName: "Extract Version"
-                inputs:
-                  targetType: 'inline'
-                  script: |
-                    [xml]$pomXml = Get-Content $(System.ArtifactsDirectory)/$(MULE_APP_NAME)/drop/pom.xml
-                          # version
-                          Write-Host $pomXml.project.version
-                          $pomversion=$pomXml.project.version
-                          Write-Host 
+     runOnce:
+      deploy:
+        steps:
+        - task: DownloadBuildArtifacts@1
+          inputs:
+            buildType: 'current'
+            downloadType: 'single'
+            artifactName: 'drop'
+            downloadPath: '$(Build.ArtifactStagingDirectory)'
+        - task: Maven@3
+          inputs:
+            mavenPomFile: 'pom.xml'
+            publishJUnitResults: true
+            testResultsFiles: '**/surefire-reports/TEST-*.xml'
+            javaHomeOption: 'JDKVersion'
+            mavenVersionOption: 'Default'
+            mavenAuthenticateFeed: false
+            effectivePomSkip: false
+            sonarQubeRunAnalysis: false
