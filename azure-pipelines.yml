@@ -1,6 +1,6 @@
 
 trigger:
-  - master
+  - none
 stages:
 - stage: 'Build'
   displayName: "Affiliate System API Build"
@@ -27,6 +27,7 @@ stages:
         publishLocation: 'Container'
 
 - stage: 'Dev'
+  condition: manual
   dependsOn: 'Build'
   displayName: 'Dev Release'
   jobs:
